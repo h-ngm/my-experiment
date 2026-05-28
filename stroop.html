@@ -86,8 +86,14 @@
     .status-container {
       font-size: 20px;
       text-align: center;
-      max-width: 600px;
+      max-width: 800px;
+      width: 90%;
       line-height: 1.6;
+      margin: 0 auto;
+      padding: 20px;
+      box-sizing: border-box;
+      max-height: 95vh;
+      overflow-y: auto;
     }
     .status-spinner {
       border: 4px solid #f3f3f3;
@@ -102,40 +108,62 @@
       0% { transform: rotate(0deg); }
       100% { transform: rotate(360deg); }
     }
+
+    /* CSVデータ表示用テキストエリア */
+    .csv-textarea {
+      width: 100%;
+      height: 200px;
+      font-family: Consolas, Monaco, "Courier New", Courier, monospace;
+      font-size: 14px;
+      margin-top: 15px;
+      padding: 12px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      background-color: #f8f9fa;
+      color: #333333;
+      resize: vertical;
+      box-sizing: border-box;
+    }
   </style>
 </head>
 <body>
   <div id="jspsych-target"></div>
 
   <script>
-    // 送信先GASのウェブアプリURL
-    const GAS_URL = "https://script.google.com/macros/s/AKfycby7XOlJ36PrMgS2vR9CHb2jYKn69oSRd-7p3m0wi5YxHqOMAuct8m9qouqJJf3jiRsL0A/exec";
+    // 送信先GASのウェブアプリURL (更新済)
+    const GAS_URL = "https://script.google.com/macros/s/AKfycbx7Jg1WJphHR7KJn8X2UlJnEIgH6iF1hUUsaJaz8CA36Qqo3Vwn4mKdYd980pLS6icRIw/exec";
 
-    // 指数バックオフを使用したデータ送信関数
+    /**
+     * 指数バックオフを使用したデータ送信関数
+     * @param {string} csvData - 送信するCSV文字列
+     * @param {number} maxRetries - 最大リトライ回数
+     */
     async function sendDataWithRetry(csvData, maxRetries = 5) {
       let delay = 1000; // 初期待機時間 (1秒)
       
       for (let attempt = 1; attempt <= maxRetries; attempt++) {
         try {
-          const response = await fetch(GAS_URL, {
+          // CORS制限とリダイレクトによるエラーを回避するため、'no-cors' モードを使用します。
+          // これによりブラウザによる偽のエラー判定を防ぎ、確実にデータを送信できます。
+          await fetch(GAS_URL, {
             method: 'POST',
-            mode: 'no-cors', // クロスドメイン制限（CORS）を回避するための設定
+            mode: 'no-cors', 
             headers: {
-              'Content-Type': 'text/plain' // no-corsではシンプルなヘッダーにする必要があります
+              'Content-Type': 'text/plain'
             },
             body: csvData
           });
           
-          // no-cors の場合、正常にリクエストが送られても response.ok は false（status 0）になります。
-          // そのため、エラー（例外）がスローされなかった場合は送信成功とみなします。
+          // 'no-cors' モードではレスポンスのステータスコードをブラウザが隠蔽するため、
+          // fetch処理自体が例外（ネット切断等）を出さずに完了すれば送信成功と見なします。
           return true;
         } catch (error) {
           if (attempt === maxRetries) {
-            throw error; // 最大試行回数に達した場合はエラーを上に投げる
+            throw error; // 最大試行回数に達した場合はエラーを上にスロー
           }
-          // 指数バックオフによる待機
+          // 指数バックオフによる待機 (1s -> 2s -> 4s -> 8s -> 16s)
           await new Promise(resolve => setTimeout(resolve, delay));
-          delay *= 2; // 待機時間を倍にする (1s -> 2s -> 4s -> 8s -> 16s)
+          delay *= 2; 
         }
       }
       return false;
@@ -148,11 +176,10 @@
       on_finish: async function() {
         const display_element = jsPsych.getDisplayElement();
         
-        // 1. メインのStroop課題試行データのみを抽出
+        // 1. メインのStroop課題試行データのみを抽出 (注視点や入力画面を除外)
         const rawTrials = jsPsych.data.get().filter({ task: 'stroop' }).values();
         
-        // 2. CSVデータの生成
-        // ヘッダー定義
+        // 2. 分析用のカスタムCSVデータの生成
         const headers = ["subject_id", "timestamp", "word", "color", "condition", "rt", "correct"];
         let csvContent = headers.join(",") + "\n";
         
@@ -164,12 +191,12 @@
             `"${trial.color || ''}"`,
             `"${trial.condition || ''}"`,
             trial.rt !== null ? trial.rt : "",
-            `"${trial.correct || 'false'}"` // 必ず "true" または "false" という文字列にする
+            `"${trial.correct || 'false'}"` // 空欄回避のため、必ず "true" または "false" にフォールバック
           ];
           csvContent += row.join(",") + "\n";
         });
 
-        // 送信中画面の描画
+        // 送信中画面の安全な描画 (jsPsych.getDisplayElement()を使用)
         display_element.innerHTML = `
           <div class="status-container">
             <p>実験が終了しました。データを送信しています。</p>
@@ -181,21 +208,28 @@
         // 3. GASへ送信を実行 (指数バックオフ制御付き)
         try {
           await sendDataWithRetry(csvContent);
-          // 送信成功時の表示
+          // 送信成功時の表示 (送信に成功しても、念のためCSVを表示する)
           display_element.innerHTML = `
             <div class="status-container">
-              <h2 style="color: #2ecc71; margin-bottom: 20px;">送信完了</h2>
-              <p>実験データは正常に保存されました。</p>
-              <p>ご協力ありがとうございました。この画面を閉じて終了してください。</p>
+              <h2 style="color: #2ecc71; margin-bottom: 10px;">送信完了</h2>
+              <p style="margin-bottom: 20px;">実験データは正常にサーバーへ保存されました。</p>
+              
+              <div style="background-color: #f0fdf4; border: 1px solid #bbf7d0; padding: 15px; border-radius: 6px; text-align: left; font-size: 16px;">
+                <p style="margin: 0 0 10px 0; font-weight: bold; color: #166534;">📝 送信されたCSVデータ（バックアップ用）:</p>
+                <p style="margin: 0 0 10px 0; font-size: 14px; color: #1e293b;">データは既に保存されていますが、確認や手動保存のために以下をコピーすることも可能です。</p>
+                <textarea readonly class="csv-textarea">${csvContent}</textarea>
+              </div>
+              <p style="font-size:16px; color:#666; margin-top: 20px;">ご協力ありがとうございました。この画面を閉じて終了してください。</p>
             </div>
           `;
         } catch (error) {
           // 送信失敗時の表示 (フォールバックとしてCSVデータを画面に直接表示して手動コピーできるようにする)
           display_element.innerHTML = `
-            <div class="status-container" style="max-width: 800px; padding: 20px;">
-              <h2 style="color: #e74c3c; margin-bottom: 20px;">データ自動送信エラー</h2>
-              <p>データの自動保存に失敗しました。お手数ですが、以下の枠内のデータをすべてコピーし、実験実施者へお送りください。</p>
-              <textarea readonly style="width: 100%; height: 300px; font-family: monospace; font-size: 14px; margin-top: 15px; padding: 10px; border-radius: 4px; border: 1px solid #ccc;">${csvContent}</textarea>
+            <div class="status-container">
+              <h2 style="color: #e74c3c; margin-bottom: 15px;">データ自動送信エラー</h2>
+              <p style="font-weight: bold;">データの自動保存に失敗しました。</p>
+              <p style="font-size: 16px; margin-bottom: 20px;">お手数ですが、以下の枠内のデータをすべてコピーし、実験実施者へメールなどで直接お送りください。</p>
+              <textarea readonly class="csv-textarea">${csvContent}</textarea>
             </div>
           `;
         }
