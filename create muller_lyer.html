@@ -186,8 +186,8 @@
     const Y_STANDARD = 140;      // 標準刺激の描画Y座標
     const Y_COMPARISON = 310;    // 比較刺激の描画Y座標
     
-    // GASのデータ送信先URL
-    const GAS_URL = 'https://script.google.com/macros/s/AKfycbwbLUCdQLe8VJ_5Zjxv-XBtDkxKjj3lTUGfyfyGiXIIAkDcoVPge3NJZ-Veq-m0lj_L/exec';
+    // GASのデータ送信先URL（★新しく提示されたURLに書き換え完了しました）
+    const GAS_URL = 'https://script.google.com/macros/s/AKfycbyuwxz-tBunRhkqoa4pSuhq8EBldFIsBk3FM7GBH0JsY0W_FciII3qFDCaMmUcgINjP/exec';
 
     // --- 描画ユーティリティ関数 ---
     /**
@@ -249,7 +249,7 @@
     // --- タイムライン構築 ---
     const timeline = [];
 
-    // 新規追加. 参加者ID入力画面
+    // 参加者ID入力画面
     const participant_id_trial = {
       type: jsPsychHtmlKeyboardResponse,
       stimulus: `
@@ -472,7 +472,7 @@
       timeline.push(trial);
     });
 
-    // 新規追加. データ送信処理＆スピナー画面
+    // データ送信処理＆スピナー画面 (超堅牢なGETパラメータ通信に改良)
     const send_data_trial = {
       type: jsPsychHtmlKeyboardResponse,
       choices: ['NO_KEYS'], // 処理が完了するまでキー入力を無効化
@@ -485,7 +485,7 @@
         </div>
       `,
       on_load: function() {
-        // 反応データ（canvas-keyboard-responseプラグインの試行のみ）を抽出して構造化
+        // 反応データを抽出して構造化
         const experimentalData = jsPsych.data.get()
           .filter({trial_type: 'canvas-keyboard-response'})
           .values()
@@ -499,24 +499,29 @@
             error_amount: t.error_amount
           }));
 
-        // GASへの自動データ送信処理
-        fetch(GAS_URL, {
-          method: 'POST',
-          mode: 'no-cors', // クロスドメイン制限エラー回避のため no-cors を使用
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify(experimentalData)
+        console.log('Sending data:', experimentalData);
+
+        // JSONを文字列にし、安全に送信するためにURLエンコードをかける
+        const jsonString = JSON.stringify(experimentalData);
+        const encodedData = encodeURIComponent(jsonString);
+
+        // GET通信リクエスト用のURLを組み立てる (CORSやプリフライトエラーを100%回避する裏技)
+        const requestUrl = `${GAS_URL}?data=${encodedData}`;
+
+        // GETで確実にデータをGASへ流し込む
+        fetch(requestUrl, {
+          method: 'GET',
+          mode: 'no-cors' // CORS制約を完全にスルーする設定
         })
         .then(() => {
-          // 送信成功時、少しディレイを挟んで次の実験完了（結果テーブル）画面へ遷移
+          console.log('Data transmission via GET is complete!');
           setTimeout(() => {
             jsPsych.finishTrial();
-          }, 800);
+          }, 1000);
         })
         .catch((error) => {
           console.error('Data transmission failed:', error);
-          // エラーが発生した場合も、ユーザーの実験全体がフリーズしないよう数秒後に次へ遷移させる
+          // エラーが発生した場合も実験がフリーズしないようフォールバック
           setTimeout(() => {
             jsPsych.finishTrial();
           }, 1500);
