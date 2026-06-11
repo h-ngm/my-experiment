@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>尚絅学院大学 長谷川研究室</title>
+    <!-- Google Fonts から美しく読みやすいフォントを導入 -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&display=swap" rel="stylesheet">
+    
+    <style>
+        /* --- デザイン変数（テーマカラー：温かみのある淡い茶色＆ベージュ） --- */
+        :root {
+            --bg-color: #faf6f0;          /* 全体の背景：温かみのあるごく淡いベージュ */
+            --card-bg: #ffffff;          /* カード背景：クリーンな白 */
+            --primary-color: #8c6a5c;     /* メインカラー：落ち着いたココアブラウン */
+            --primary-hover: #6d4c41;     /* ホバー時の濃いブラウン */
+            --accent-color: #d7ccc8;      /* アクセント：ソフトなサンドベージュ */
+            --text-main: #3e2723;        /* メイン文字色：深みのあるダークブラウン */
+            --text-sub: #7d6b65;         /* 補助文字色：穏やかなモカグレー */
+            --shadow-sm: 0 4px 6px rgba(140, 106, 92, 0.03);
+            --shadow-md: 0 10px 20px rgba(140, 106, 92, 0.08);
+            --shadow-hover: 0 16px 28px rgba(140, 106, 92, 0.15);
+            --border-radius: 16px;
+        }
+
+        /* --- 共通スタイル --- */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Noto Sans JP', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            line-height: 1.7;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 0 24px;
+        }
+
+        /* --- ヘッダー領域 --- */
+        header {
+            background-color: var(--card-bg);
+            border-bottom: 1px solid rgba(140, 106, 92, 0.12);
+            padding: 40px 0;
+            text-align: center;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .header-title {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--primary-color);
+            letter-spacing: 0.05em;
+            margin-bottom: 8px; /* 元の余白に戻す */
+        }
+
+        /* サブタイトル：大学のロゴや所属を想起させる落ち着き */
+        .header-sub {
+            font-size: 0.95rem;
+            color: var(--text-sub);
+            font-weight: 500;
+        }
+
+        /* ヘッダーと挨拶文の間の区切り線 */
+        .divider-container {
+            width: 100%;
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 0 24px;
+        }
+
+        .header-divider {
+            border: none;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--primary-color) 50%, transparent);
+            opacity: 0.4;
+            margin-top: 20px;
+        }
+
+        /* --- 挨拶・イントロダクション --- */
+        .intro-section {
+            padding: 40px 0 40px; /* 線を引いたので上部余白を少し調整 */
+            text-align: center;
+        }
+
+        .intro-card {
+            background: linear-gradient(135deg, #ffffff, #faf4ee);
+            border: 1px solid rgba(140, 106, 92, 0.15);
+            border-radius: var(--border-radius);
+            padding: 35px 40px;
+            box-shadow: var(--shadow-sm);
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .intro-card p {
+            font-size: 1.05rem;
+            color: var(--text-main);
+            font-weight: 400;
+            margin-bottom: 0;
+        }
+
+        /* モバイル用の行間最適化 */
+        @media (max-width: 600px) {
+            .intro-card {
+                padding: 24px 20px;
+            }
+            .intro-card p {
+                font-size: 0.95rem;
+                text-align: left; /* スマホでは左寄せが見やすくなります */
+            }
+        }
+
+        /* --- 実験リスト（カードグリッド） --- */
+        .experiments-section {
+            padding: 20px 0 80px;
+        }
+
+        .grid-layout {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); /* 幅を少しコンパクトにして並びやすく */
+            gap: 30px;
+            margin-top: 30px;
+        }
+
+        /* 単一の実験カード */
+        .experiment-card {
+            background-color: var(--card-bg);
+            border-radius: var(--border-radius);
+            padding: 30px; /* 正方形の中にバランスよく収めるため、少し余白をスリム化 */
+            box-shadow: var(--shadow-md);
+            border: 1px solid rgba(140, 106, 92, 0.05);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* 画面幅が広いデスクトップやタブレットのとき、カードをきれいな正方形(1:1)にする */
+        @media (min-width: 641px) {
+            .experiment-card {
+                aspect-ratio: 1 / 1; /* 縦横比を1:1の正方形に固定 */
+                min-height: 320px;   /* 中身のテキストが溢れるのを防ぐ最小高さ */
+            }
+        }
+
+        /* 装飾的な上部ライン */
+        .experiment-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 5px;
+            background: linear-gradient(90deg, var(--accent-color), var(--primary-color));
+            transition: height 0.3s ease;
+        }
+
+        /* ホバー時のインタラクション */
+        .experiment-card:hover {
+            transform: translateY(-8px);
+            box-shadow: var(--shadow-hover);
+            border-color: rgba(140, 106, 92, 0.15);
+        }
+
+        .experiment-card:hover::before {
+            height: 8px; /* ホバー時にラインを少し太く */
+        }
+
+        /* カード内部テキスト */
+        .card-header {
+            margin-bottom: 15px;
+        }
+
+        .experiment-id {
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: var(--primary-color);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            display: inline-block;
+            margin-bottom: 8px;
+            background-color: #f5ece5;
+            padding: 2px 10px;
+            border-radius: 20px;
+        }
+
+        .experiment-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--text-main);
+            margin-bottom: 10px;
+            line-height: 1.4;
+        }
+
+        .experiment-desc {
+            font-size: 0.88rem; /* 正方形内に綺麗に収めるために、文字サイズをわずかに調整 */
+            color: var(--text-sub);
+            margin-bottom: 15px;
+            line-height: 1.6;
+        }
+
+        /* ボタン（リンク）のスタイル */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background-color: var(--primary-color);
+            color: #ffffff;
+            text-decoration: none;
+            padding: 12px 24px;
+            border-radius: 30px;
+            font-weight: 500;
+            font-size: 0.9rem;
+            letter-spacing: 0.03em;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 10px rgba(140, 106, 92, 0.2);
+            width: 100%;
+            text-align: center;
+        }
+
+        .btn:hover {
+            background-color: var(--primary-hover);
+            box-shadow: 0 6px 15px rgba(109, 76, 65, 0.3);
+            transform: translateY(-2px);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        /* 矢印アイコンのスタイル（ボタン内） */
+        .btn::after {
+            content: '→';
+            margin-left: 8px;
+            transition: transform 0.3s ease;
+        }
+
+        .btn:hover::after {
+            transform: translateX(4px);
+        }
+
+        /* --- フッター領域 --- */
+        footer {
+            background-color: var(--card-bg);
+            border-top: 1px solid rgba(140, 106, 92, 0.1);
+            padding: 30px 0;
+            text-align: center;
+            margin-top: auto;
+            color: var(--text-sub);
+            font-size: 0.85rem;
+        }
+
+        /* --- レスポンシブ対応の調整 --- */
+        @media (max-width: 768px) {
+            .grid-layout {
+                grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); /* モバイル端末の幅に最適化 */
+                gap: 20px;
+            }
+            .header-title {
+                font-size: 1.5rem;
+            }
+            .intro-section {
+                padding: 40px 0 20px;
+            }
+            .experiments-section {
+                padding: 10px 0 60px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ヘッダー -->
+    <header>
+        <div class="container">
+            <h1 class="header-title">尚絅学院大学 長谷川研究室</h1>
+            <p class="header-sub">Online Psychology Experiments Portal</p>
+        </div>
+    </header>
+
+    <!-- 研究室ヘッダーと挨拶文の間の区切り線 -->
+    <div class="divider-container">
+        <hr class="header-divider">
+    </div>
+
+    <!-- メインコンテンツ -->
+    <main>
+        <!-- 挨拶文セクション -->
+        <section class="intro-section">
+            <div class="container">
+                <div class="intro-card">
+                    <p>
+                        ご訪問ありがとうございます。以下の実験へのご協力をお願いいたします。<br>
+                        各実験は数分で終了する簡単なものです。スマートフォンからもご参加いただけます。
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <!-- 実験リストセクション -->
+        <section class="experiments-section">
+            <div class="container">
+                <div class="grid-layout">
+
+                    <!-- 実験0 -->
+                    <article class="experiment-card">
+                        <div class="card-header">
+                            <span class="experiment-id">Experiment 0</span>
+                            <h2 class="experiment-title">はじめてのWebページ</h2>
+                            <p class="experiment-desc">
+                                第2回講義で作成した記念すべき「Hello World」のページです。すべての始まりの第一歩をご覧ください。
+                            </p>
+                        </div>
+                        <a href="hello_world.html" class="btn">Hello Worldを見る</a>
+                    </article>
+
+                    <!-- 実験1 -->
+                    <article class="experiment-card">
+                        <div class="card-header">
+                            <span class="experiment-id">Experiment 1</span>
+                            <h2 class="experiment-title">ストループ課題</h2>
+                            <p class="experiment-desc">
+                                「文字の意味」と「文字の色」の干渉効果を調べる、簡単なキーボード入力のテストです。<br>
+                                <strong>（所要時間：約3分）</strong>
+                            </p>
+                        </div>
+                        <a href="stroop.html" class="btn">実験1に参加する</a>
+                    </article>
+
+                    <!-- 実験2 -->
+                    <article class="experiment-card">
+                        <div class="card-header">
+                            <span class="experiment-id">Experiment 2</span>
+                            <h2 class="experiment-title">ミュラー・リヤー錯視</h2>
+                            <p class="experiment-desc">
+                                矢印の向きによって図形の長さが違って見える不思議な錯覚を測定する、スライダーを用いた視覚テストです。<br>
+                                <strong>（所要時間：約2分）</strong>
+                            </p>
+                        </div>
+                        <a href="muller_lyer_final.html" class="btn">実験2に参加する</a>
+                    </article>
+
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- フッター -->
+    <footer>
+        <div class="container">
+            <p>&copy; Shokei Gakuin University. All Rights Reserved.</p>
+        </div>
+    </footer>
+
+</body>
+</html>
