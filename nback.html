@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>N-Back 認知評価課題 (1-Back & 2-Back)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- jsPsych CDN -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/jspsych@7.3.4/css/jspsych.css">
+  <script src="https://cdn.jsdelivr.net/npm/jspsych@7.3.4/dist/index.browser.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@jspsych/plugin-html-keyboard-response@1.1.2/dist/index.browser.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@jspsych/plugin-html-button-response@1.1.2/dist/index.browser.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@jspsych/plugin-survey-html-form@1.0.2/dist/index.browser.min.js"></script>
+  
+  <style>
+    body { font-family: 'Hiragino Kaku Gothic ProN', 'Meiryo', -apple-system, BlinkMacSystemFont, sans-serif; background-color: #f8fafc; color: #1e293b; margin: 0; padding: 0; line-height: 1.8; }
+    .jspsych-content { max-width: 650px; width: 100%; padding: 1.5rem; }
+    .task-card { background: white; padding: 2.5rem; border-radius: 1.25rem; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05); border: 1px solid #e2e8f0; text-align: left; }
+    .custom-btn { background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); color: white !important; font-weight: 600; padding: 0.75rem 2.5rem; border-radius: 0.75rem; transition: all 0.2s ease; border: none; box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.3); cursor: pointer; }
+    .custom-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 12px -2px rgba(59, 130, 246, 0.4); }
+    .response-btn-container { display: flex; gap: 1.5rem; justify-content: center; width: 100%; max-width: 480px; margin: 2rem auto 0 auto; }
+    .response-btn { flex: 1; padding: 1.25rem 1rem; font-size: 1.25rem; font-weight: bold; border-radius: 1rem; border: 2px solid #e2e8f0; background-color: white; color: #334155; cursor: pointer; transition: all 0.15s ease; outline: none; box-shadow: 0 2px 4px rgba(0,0,0,0.02); text-align: center; }
+    .response-btn:active, .response-btn.active-click { transform: scale(0.97); }
+    .same-btn { border-color: #3b82f6; color: #1d4ed8; }
+    .diff-btn { border-color: #f43f5e; color: #e11d48; }
+    .stimulus-display { font-size: 96px; font-weight: 800; color: #1e293b; height: 140px; display: flex; align-items: center; justify-content: center; }
+    .task-guide { font-size: 0.95rem; color: #64748b; background-color: #f1f5f9; padding: 0.5rem 1rem; border-radius: 0.5rem; margin-bottom: 2.5rem; text-align: center; font-weight: 500; }
+    .feedback-table { width: 100%; border-collapse: collapse; margin-top: 1.5rem; font-size: 0.9rem; background: white; border-radius: 0.5rem; overflow: hidden; }
+    .feedback-table th { background-color: #475569; color: white; padding: 0.75rem; text-align: center; }
+    .feedback-table td { padding: 0.75rem; border-bottom: 1px solid #e2e8f0; text-align: center; }
+  </style>
+</head>
+<body>
+  <div id="jspsych-target" class="min-h-screen flex items-center justify-center p-4"></div>
+
+  <script>
+    let jsPsych;
+    // --- 【修正】グローバル変数の定義 ---
+    const letters = ['A', 'B', 'C', 'D', 'E'];
+    const totalTrials = 20;
+    const targetCount = 6;
+
+    function generateSequence(isTwoBack) {
+      let sequence = [];
+      const n = isTwoBack ? 2 : 1;
+      for (let i = 0; i < n; i++) sequence.push(letters[Math.floor(Math.random() * letters.length)]);
+      
+      let availableIndices = [];
+      for (let i = n; i < totalTrials; i++) availableIndices.push(i);
+      availableIndices.sort(() => Math.random() - 0.5);
+      const targetIndices = new Set(availableIndices.slice(0, targetCount));
+      
+      for (let i = n; i < totalTrials; i++) {
+        const backLetter = sequence[i - n];
+        if (targetIndices.has(i)) sequence.push(backLetter);
+        else sequence.push(letters.filter(l => l !== backLetter)[Math.floor(Math.random() * 4)]);
+      }
+      return sequence.map((letter, index) => ({
+        trial_index_in_task: index + 1,
+        letter,
+        is_target: index >= n && letter === sequence[index - n],
+        condition: index >= n && letter === sequence[index - n] ? "同じ" : "違う"
+      }));
+    }
+
+    window.onload = function() {
+      jsPsych = initJsPsych({
+        display_element: 'jspsych-target',
+        on_finish: async function() {
+          const display = jsPsych.getDisplayElement();
+          display.innerHTML = `<div class="task-card text-center"><p class="text-lg font-bold text-blue-600">データを送信中です...</p></div>`;
+
+          const allData = jsPsych.data.get().values();
+          const taskData = allData.filter(t => t.task_condition === '1-back' || t.task_condition === '2-back');
+
+          try {
+            await fetch('https://script.google.com/macros/s/AKfycbwlgsMwtVObX0Tp6ag6WRTt_bBRoCYairrvXpfSxHu1NUel-7vFcwKEhXuXrh3SELCt/exec', {
+              method: 'POST',
+              mode: 'no-cors',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                participant: {
+                  id: jsPsych.data.get().select('participant_id').values[0],
+                  age: jsPsych.data.get().select('age').values[0],
+                  gender: jsPsych.data.get().select('gender').values[0]
+                },
+                trials: taskData
+              })
+            });
+          } catch(e) { console.error(e); }
+
+          display.innerHTML = `<div class="max-w-4xl w-full mx-auto my-8 bg-white p-8 rounded-2xl shadow-xl"><h2 class="text-2xl font-bold text-center text-blue-600 mb-4">実験終了。ご協力ありがとうございました。</h2></div>`;
+          showCustomFeedback();
+        }
+      });
+
+      let timeline = [];
+      timeline.push({ 
+        type: jsPsychSurveyHtmlForm, 
+        html: `<div class="task-card"><h2 class="text-2xl font-bold mb-4">参加者情報</h2><input type="text" name="participant_id" required placeholder="参加者ID" class="w-full mb-4 p-2 border rounded"><input type="number" name="age" required placeholder="年齢" class="w-full mb-4 p-2 border rounded"><div class="flex gap-4"><label><input type="radio" name="gender" value="男性" required> 男性</label><label><input type="radio" name="gender" value="女性"> 女性</label></div><button class="custom-btn w-full mt-4">次へ</button></div>`, 
+        on_finish: (d) => jsPsych.data.addProperties(d.response) 
+      });
+
+      [ { cond: '1-back', seq: generateSequence(false), text: '1-Back課題' }, { cond: '2-back', seq: generateSequence(true), text: '2-Back課題' } ].forEach((task, tIdx) => {
+        timeline.push({ type: jsPsychHtmlButtonResponse, stimulus: `<div class="task-card"><h2 class="text-2xl font-bold">${task.text}を開始します</h2></div>`, choices: ['開始'] });
+        task.seq.forEach((trialInfo, idx) => {
+          timeline.push({
+            type: jsPsychHtmlKeyboardResponse,
+            stimulus: `<div class="w-full flex flex-col items-center"><div class="task-guide">${task.cond} - 刺激:${trialInfo.letter}</div><div class="stimulus-display" id="stimulus-box">${trialInfo.letter}</div><div class="response-btn-container"><button type="button" id="btn-same" class="response-btn same-btn">同じ</button><button type="button" id="btn-diff" class="response-btn diff-btn">違う</button></div></div>`,
+            choices: ['f', 'j'], trial_duration: 2000, response_ends_trial: false,
+            on_load: () => {
+              jsPsych.pluginAPI.setTimeout(() => {
+                const stimBox = document.getElementById('stimulus-box');
+                if (stimBox) stimBox.innerHTML = '';
+              }, 500);
+              document.getElementById('btn-same').onclick = () => jsPsych.finishTrial({rt: 0, response: 'f'});
+              document.getElementById('btn-diff').onclick = () => jsPsych.finishTrial({rt: 0, response: 'j'});
+            },
+            on_finish: (d) => {
+              const isCorrect = (d.response === 'f' && trialInfo.is_target) || (d.response === 'j' && !trialInfo.is_target);
+              Object.assign(d, { trial_no: trialInfo.trial_index_in_task, presented_letter: trialInfo.letter, is_target: trialInfo.is_target, condition: trialInfo.condition, task_condition: task.cond, correct: isCorrect, participant_answer: d.response === 'f' ? '同じ' : '違う' });
+            }
+          });
+        });
+      });
+      jsPsych.run(timeline);
+    };
+
+    function showCustomFeedback() {
+      const trials = jsPsych.data.get().filterCustom(t => t.task_condition).values();
+      let html = `<div class="max-w-4xl w-full mx-auto mt-8 bg-white p-6 rounded-xl border"><h3 class="text-lg font-bold mb-4">詳細ログ</h3><table class="feedback-table"><thead><tr><th>条件</th><th>試行</th><th>文字</th><th>判定</th><th>正誤</th></tr></thead><tbody>`;
+      trials.forEach(t => { html += `<tr><td>${t.task_condition}</td><td>${t.trial_no}</td><td>${t.presented_letter}</td><td>${t.participant_answer}</td><td>${t.correct ? '正解' : '不正解'}</td></tr>`; });
+      html += `</tbody></table></div>`;
+      document.getElementById('jspsych-target').insertAdjacentHTML('beforeend', html);
+    }
+  </script>
+</body>
+</html>
